@@ -3,80 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Firebase CRUD App</title>
-  
-  <!-- Bootstrap CSS -->
+  <title>View Candidates</title>
+
+  <!-- Bootstrap CSS for styling -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 
-  <!-- Firebase SDKs (Non-Module Version) -->
+  <!-- Font Awesome for star icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+
+  <link href="assets/css/style.css" rel="stylesheet" type="text/css">
+
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-database-compat.js"></script>
-</head>
-<body>
-  <div class="container mt-5">
-    <h2 class="text-center">Firebase Realtime Database CRUD</h2>
 
-    <!-- Input Form for CRUD Operations -->
-    <div class="row">
-      <div class="col-md-6">
-        <h4>Add New Record</h4>
-        <form id="addForm">
-          <div class="mb-3">
-            <label for="name" class="form-label">Name</label>
-            <input type="text" class="form-control" id="name" placeholder="Enter name" required>
-          </div>
-          <div class="mb-3">
-            <label for="email" class="form-label">Email</label>
-            <input type="email" class="form-control" id="email" placeholder="Enter email" required>
-          </div>
-          <button type="submit" class="btn btn-primary">Add Record</button>
-        </form>
-      </div>
-      
-      <div class="col-md-6">
-        <h4>Update Record</h4>
-        <form id="updateForm">
-          <div class="mb-3">
-            <label for="updateId" class="form-label">Record ID</label>
-            <input type="text" class="form-control" id="updateId" placeholder="Enter record ID" readonly required>
-          </div>
-          <div class="mb-3">
-            <label for="updateName" class="form-label">New Name</label>
-            <input type="text" class="form-control" id="updateName" placeholder="Enter new name" required>
-          </div>
-          <div class="mb-3">
-            <label for="updateEmail" class="form-label">New Email</label>
-            <input type="email" class="form-control" id="updateEmail" placeholder="Enter new email" required>
-          </div>
-          <button type="submit" class="btn btn-warning">Update Record</button>
-        </form>
-      </div>
-    </div>
-    
-    <!-- Table to Display Records -->
-    <h3 class="mt-5">All Records</h3>
-    <table class="table table-bordered" id="recordsTable">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="recordsBody">
-        <!-- Data will be populated here -->
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Firebase Configuration and JS Code -->
   <script>
-    // Your Firebase configuration from earlier
+    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyBIKxKbI6k3ojF6Shb6samXxXcUdirYNdU",
       authDomain: "sensorica-candidates.firebaseapp.com",
-      databaseURL: "https://sensorica-candidates-default-rtdb.asia-southeast1.firebasedatabase.app",  // Update this line
+      databaseURL: "https://sensorica-candidates-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId: "sensorica-candidates",
       storageBucket: "sensorica-candidates.appspot.com",
       messagingSenderId: "537441231318",
@@ -87,81 +33,151 @@
     const app = firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Create Record
-    document.getElementById('addForm').addEventListener('submit', function (e) {
-      e.preventDefault();
-      const name = document.getElementById('name').value;
-      const email = document.getElementById('email').value;
-      
-      const newRecordKey = database.ref().child('records').push().key;
-      database.ref('records/' + newRecordKey).set({
-        name: name,
-        email: email
-      });
+    // Position mapping
+    const positionMap = {
+      1: "Sous Chef",
+      2: "Bartender",
+      3: "Sushi Chef",
+      4: "Cooks",
+      5: "Waiter",
+      6: "Hostess",
+      7: "Cleaning / Dish Washer"
+    };
 
-      document.getElementById('addForm').reset();
-      fetchRecords();
-    });
-
-    // Fetch and display records
-    function fetchRecords() {
-      const recordsBody = document.getElementById('recordsBody');
-      recordsBody.innerHTML = '';
-      database.ref('records').on('value', function (snapshot) {
-        const records = snapshot.val();
-        for (let key in records) {
-          const record = records[key];
-          const row = `
-            <tr>
-              <td>${key}</td>
-              <td>${record.name}</td>
-              <td>${record.email}</td>
-              <td>
-                <button class="btn btn-info" onclick="editRecord('${key}')">Edit</button>
-                <button class="btn btn-danger" onclick="deleteRecord('${key}')">Delete</button>
-              </td>
-            </tr>
-          `;
-          recordsBody.innerHTML += row;
+    // Helper function to generate stars for rating
+    function generateStarRating(rating) {
+      let stars = '';
+      for (let i = 1; i <= 5; i++) {
+        if (i <= rating) {
+          stars += '<i class="fas fa-star"></i>';
+        } else {
+          stars += '<i class="far fa-star"></i>';
         }
+      }
+      return stars;
+    }
+
+    // Function to load unique nationalities and populate the select box
+    function loadNationalities() {
+      database.ref('candidates').once('value', (snapshot) => {
+        const candidates = snapshot.val();
+        const nationalities = new Set();
+
+        // Collect all unique nationalities
+        Object.keys(candidates).forEach((key) => {
+          nationalities.add(candidates[key].nationality);
+        });
+
+        const nationalityFilter = document.getElementById('nationalityFilter');
+        nationalityFilter.innerHTML = '<option value="" selected>All Nationalities</option>'; // Default option
+
+        // Populate the select box with nationalities
+        nationalities.forEach((nationality) => {
+          const option = document.createElement('option');
+          option.value = nationality;
+          option.text = nationality;
+          nationalityFilter.appendChild(option);
+        });
       });
     }
 
-    // Edit Record (Populates the update form)
-    function editRecord(id) {
-      const recordRef = database.ref('records/' + id);
-      recordRef.once('value').then(function (snapshot) {
-        const record = snapshot.val();
-        document.getElementById('updateId').value = id;
-        document.getElementById('updateName').value = record.name;
-        document.getElementById('updateEmail').value = record.email;
+    // Load candidates from Firebase and populate the cards
+    function loadCandidates() {
+      const candidatesContainer = document.getElementById('candidatesContainer');
+      candidatesContainer.innerHTML = '';  // Clear the container before loading new data
+
+      const selectedPosition = document.getElementById('positionFilter').value;
+      const selectedNationality = document.getElementById('nationalityFilter').value;
+
+      database.ref('candidates').once('value', (snapshot) => {
+        const candidates = snapshot.val();
+
+        // Convert candidates object to an array for easy filtering and sorting
+        const candidatesArray = Object.keys(candidates).map((key) => ({
+          ...candidates[key],
+          id: key
+        }));
+
+        // Filter candidates based on position and nationality
+        const filteredCandidates = candidatesArray.filter((candidate) => {
+          const matchesPosition = !selectedPosition || candidate.position == selectedPosition;
+          const matchesNationality = !selectedNationality || candidate.nationality === selectedNationality;
+          return matchesPosition && matchesNationality;
+        });
+
+        // Iterate over filtered candidates and create cards
+filteredCandidates.forEach((candidate) => {
+  const interviewStatus = candidate.interview_done === "1" 
+    ? '<div class="badge-status green">Interviewed</div>' 
+    : '<div class="badge-status yellow">Not Interviewed Yet</div>';
+
+  const card = `
+    <div class="col-md-3 mb-4">
+      <div class="card candidate-card position-relative h-100">
+        <a href="view_details.html?id=${candidate.id}"><img src="${candidate.profile_photo_url}" class="card-img-top" alt="${candidate.name}"></a>
+        ${interviewStatus}
+        <div class="card-body">
+          <h4 class="card-title"><strong><em>${candidate.name}</em></strong></h4>
+          <p class="card-text"><strong>Position:</strong> ${positionMap[candidate.position]}</p>
+          <p class="card-text"><strong>Nationality:</strong> ${candidate.nationality}</p>
+          <div class="star-rating">${generateStarRating(candidate.rating)}</div>
+          <a href="view_details.html?id=${candidate.id}" class="btn btn-primary mt-2">View Details</a>
+        </div>
+      </div>
+    </div>
+  `;
+  candidatesContainer.innerHTML += card;
+});
       });
     }
 
-    // Delete Record
-    function deleteRecord(id) {
-      database.ref('records/' + id).remove();
-      fetchRecords();
+    // Function to view details of a candidate (you can expand this to show a modal or detailed view)
+    // function viewDetails(candidateId) {
+    //   alert('Viewing details for candidate ID: ' + candidateId);
+    //   // You can navigate to a detailed view page or show a modal here
+    // }
+
+    // Filter candidates based on position or nationality
+    function filterCandidates() {
+      loadCandidates();  // Reload the candidates list with filter applied
     }
 
-    // Update Record
-    document.getElementById('updateForm').addEventListener('submit', function (e) {
-      e.preventDefault();
-      const updateId = document.getElementById('updateId').value;
-      const updateName = document.getElementById('updateName').value;
-      const updateEmail = document.getElementById('updateEmail').value;
-
-      database.ref('records/' + updateId).update({
-        name: updateName,
-        email: updateEmail
-      });
-
-      document.getElementById('updateForm').reset();
-      fetchRecords();
-    });
-
-    // Fetch records initially
-    fetchRecords();
+    // Load nationalities and candidates when the page loads
+    window.onload = function () {
+      loadNationalities();  // Load nationalities into the select box
+      loadCandidates();     // Load candidates initially
+    };
   </script>
+</head>
+<body>
+  <div class="container mt-5">
+    <h2 class="text-center">View Candidates</h2>
+
+    <!-- Filter Section -->
+    <div class="row filter-section mb-4">
+      <div class="col-md-4">
+        <select id="positionFilter" class="form-select" onchange="filterCandidates()">
+          <option value="" selected>All Positions</option>
+          <option value="1">Sous Chef</option>
+          <option value="2">Bartender</option>
+          <option value="3">Sushi Chef</option>
+          <option value="4">Cooks</option>
+          <option value="5">Waiter</option>
+          <option value="6">Hostess</option>
+          <option value="7">Cleaning / Dish Washer</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <select id="nationalityFilter" class="form-select" onchange="filterCandidates()">
+          <!-- Nationality options will be dynamically loaded from Firebase -->
+        </select>
+      </div>
+    </div>
+
+    <!-- Candidates Card Section -->
+    <div class="row" id="candidatesContainer">
+      <!-- Candidate cards will be dynamically inserted here -->
+    </div>
+  </div>
 </body>
 </html>
