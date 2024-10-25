@@ -114,6 +114,11 @@
       </div>
 
       <div class="mb-3">
+        <label for="expectedSalary" class="form-label">Expected Salary</label>
+        <input type="text" class="form-control" id="expectedSalary" placeholder="Enter expected salary" required>
+      </div>
+
+      <div class="mb-3">
         <label for="comments" class="form-label">Comments</label>
         <textarea class="form-control" id="comments" rows="3" placeholder="Enter comments"></textarea>
       </div>
@@ -170,6 +175,7 @@
       const interview = document.querySelector('input[name="interview"]:checked').value;
       const workPermit = document.querySelector('input[name="workPermit"]:checked').value;
       const readyToStart = document.querySelector('input[name="readyToStart"]:checked').value;
+      const expectedSalary = document.getElementById('expectedSalary').value;
       const comments = document.getElementById('comments').value;
       const profilePhotoFileName = document.getElementById('profilePhoto').value;
       const resumeFileName = document.getElementById('resumeLink').value || null;
@@ -196,6 +202,7 @@
         interview_done: interview,
         work_permit: workPermit,
         ready_to_start: readyToStart,
+        expected_salary: expectedSalary,
         comments: comments,
         profile_photo_url: profilePhotoUrl,
         resume_url: resumeUrl,
@@ -299,6 +306,7 @@
           document.querySelector(`input[name="readyToStart"][value="${candidate.ready_to_start}"]`).checked = true;
         }
 
+        document.getElementById('expectedSalary').value = candidate.expected_salary || "";  // Handle empty values
         document.getElementById('comments').value = candidate.comments || "";  // Handle empty values
         document.getElementById('profilePhoto').value = candidate.profile_photo_url ? candidate.profile_photo_url.split('/').pop() : "";  // Handle missing profile photo
         document.getElementById('resumeLink').value = candidate.resume_url ? candidate.resume_url.split('/').pop() : "";  // Handle missing resume

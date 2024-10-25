@@ -75,8 +75,11 @@
         </tr>
       </tbody>
     </table>
-    <a href="/sensorica/" class="btn btn-sm btn-warning mt-4"><i class="fa-solid fa-circle-left me-2"></i> Go Back To Candidates List</a>
+    <a href="/sensorica/" class="btn btn-sm btn-warning mt-2 me-2"><i class="fa-solid fa-circle-left me-2"></i> Go Back To Candidates List</a>
+    <button id="interviewButton" class="btn btn-sm btn-primary mt-2">I Want to Interview This Candidate</button>
+    <div id="interviewStatus" class="mt-2"></div>
   </div>
+
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-database-compat.js"></script>
@@ -159,11 +162,53 @@
       return stars;
     }
 
-    // Load candidate details on page load
+    // Function to update interview status display
+    function updateInterviewStatus(candidateId) {
+      database.ref('candidates/' + candidateId).once('value').then((snapshot) => {
+        const candidate = snapshot.val();
+        const interviewStatusDiv = document.getElementById('interviewStatus');
+        const interviewButton = document.getElementById('interviewButton');
+
+        if (candidate && candidate.want_to_interview !== undefined) {
+          if (candidate.want_to_interview === 'yes') {
+            interviewStatusDiv.innerHTML = '<span style="color: green; font-weight: bold;">Noted! You want to interview this candidate.</span>';
+            interviewButton.innerText = "Cancel Interview";
+          } else {
+            interviewStatusDiv.innerHTML = '<span style="color: red; font-weight: bold;">Noted! You do not want to interview this candidate.</span>';
+            interviewButton.innerText = "I Want to Interview This Candidate";
+          }
+        } else {
+          // No existing data; just show the button without a status message
+          interviewStatusDiv.innerHTML = '';
+          interviewButton.innerText = "I Want to Interview This Candidate";
+        }
+      });
+    }
+
+    // Handle the Interview button click
+    document.getElementById('interviewButton').onclick = function () {
+      const urlParams = new URLSearchParams(window.location.search);
+      const candidateId = urlParams.get('id');  // Retrieve candidate ID from URL
+
+      // Toggle want_to_interview value and update Firebase
+      database.ref('candidates/' + candidateId).once('value').then((snapshot) => {
+        const currentData = snapshot.val();
+        const wantToInterview = currentData.want_to_interview === 'yes' ? 'no' : 'yes';
+
+        // Update the database
+        return database.ref('candidates/' + candidateId).update({ want_to_interview: wantToInterview });
+      }).then(() => {
+        // Reflect updated interview preference in the table
+        updateInterviewStatus(candidateId);
+      });
+    };
+
+    // Load candidate details and initial interview status on page load
     window.onload = function () {
       const urlParams = new URLSearchParams(window.location.search);
-      const candidateId = urlParams.get('id');  // Get the candidate ID from the URL
+      const candidateId = urlParams.get('id');
       loadCandidateDetails(candidateId);  // Load candidate details by ID
+      updateInterviewStatus(candidateId); // Update initial interview status display
     };
   </script>
 </body>
