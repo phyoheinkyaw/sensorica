@@ -4,21 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>View Candidates</title>
-
   <!-- Bootstrap CSS for styling -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-
   <!-- Font Awesome for star icons -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-
   <link href="assets/css/style.css" rel="stylesheet" type="text/css">
-
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-database-compat.js"></script>
 
   <script>
-    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyBIKxKbI6k3ojF6Shb6samXxXcUdirYNdU",
       authDomain: "sensorica-candidates.firebaseapp.com",
@@ -28,51 +23,34 @@
       messagingSenderId: "537441231318",
       appId: "1:537441231318:web:a3166f73212900bcb24477"
     };
-
-    // Initialize Firebase
     const app = firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Position mapping
     const positionMap = {
-      1: "Sous Chef",
-      2: "Bartender",
-      3: "Sushi Chef",
-      4: "Cooks",
-      5: "Waiter",
-      6: "Hostess",
-      7: "Cleaning / Dish Washer"
+      1: "Sous Chef", 2: "Bartender", 3: "Sushi Chef",
+      4: "Cooks", 5: "Waiter", 6: "Hostess", 7: "Cleaning / Dish Washer"
     };
 
-    // Helper function to generate stars for rating
+    let candidatesArray = []; // Stores all loaded candidates
+    let displayCount = 4; // Number of candidates to display per batch
+    let displayedCandidates = 0; // Track how many have been displayed so far
+    let filteredCandidates = []; // Store filtered candidates separately
+
     function generateStarRating(rating) {
       let stars = '';
       for (let i = 1; i <= 5; i++) {
-        if (i <= rating) {
-          stars += '<i class="fas fa-star"></i>';
-        } else {
-          stars += '<i class="far fa-star"></i>';
-        }
+        stars += `<i class="${i <= rating ? 'fas' : 'far'} fa-star"></i>`;
       }
       return stars;
     }
 
-    // Function to load unique nationalities and populate the select box
     function loadNationalities() {
       database.ref('candidates').once('value', (snapshot) => {
-        const candidates = snapshot.val();
         const nationalities = new Set();
-
-        // Collect all unique nationalities
-        Object.keys(candidates).forEach((key) => {
-          nationalities.add(candidates[key].nationality);
-        });
-
+        Object.values(snapshot.val()).forEach(candidate => nationalities.add(candidate.nationality));
         const nationalityFilter = document.getElementById('nationalityFilter');
-        nationalityFilter.innerHTML = '<option value="" selected>All Nationalities</option>'; // Default option
-
-        // Populate the select box with nationalities
-        nationalities.forEach((nationality) => {
+        nationalityFilter.innerHTML = '<option value="" selected>All Nationalities</option>';
+        nationalities.forEach(nationality => {
           const option = document.createElement('option');
           option.value = nationality;
           option.text = nationality;
@@ -81,71 +59,92 @@
       });
     }
 
-    // Load candidates from Firebase and populate the cards
     function loadCandidates() {
-      const candidatesContainer = document.getElementById('candidatesContainer');
-      candidatesContainer.innerHTML = '';  // Clear the container before loading new data
-
-      const selectedPosition = document.getElementById('positionFilter').value;
-      const selectedNationality = document.getElementById('nationalityFilter').value;
-
       database.ref('candidates').once('value', (snapshot) => {
-        const candidates = snapshot.val();
-
-        // Convert candidates object to an array for easy filtering and sorting
-        const candidatesArray = Object.keys(candidates).map((key) => ({
-          ...candidates[key],
+        candidatesArray = Object.keys(snapshot.val() || {}).map(key => ({
+          ...snapshot.val()[key],
           id: key
         }));
-
-        // Filter candidates based on position and nationality
-        const filteredCandidates = candidatesArray.filter((candidate) => {
-          const matchesPosition = !selectedPosition || candidate.position == selectedPosition;
-          const matchesNationality = !selectedNationality || candidate.nationality === selectedNationality;
-          return matchesPosition && matchesNationality;
-        });
-
-        // Iterate over filtered candidates and create cards
-filteredCandidates.forEach((candidate) => {
-  const interviewStatus = candidate.interview_done === "1" 
-    ? '<div class="badge-status green">Interviewed</div>' 
-    : '<div class="badge-status yellow">Not Interviewed Yet</div>';
-
-  const card = `
-    <div class="col-md-3 mb-4">
-      <div class="card candidate-card position-relative h-100">
-        <a href="view_details.html?id=${candidate.id}"><img src="${candidate.profile_photo_url}" class="card-img-top" alt="${candidate.name}"></a>
-        ${interviewStatus}
-        <div class="card-body">
-          <h4 class="card-title"><strong><em>${candidate.name}</em></strong></h4>
-          <p class="card-text"><strong>Position:</strong> ${positionMap[candidate.position]}</p>
-          <p class="card-text"><strong>Nationality:</strong> ${candidate.nationality}</p>
-          <div class="star-rating">${generateStarRating(candidate.rating)}</div>
-          <a href="view_details.html?id=${candidate.id}" class="btn btn-primary mt-2">View Details</a>
-        </div>
-      </div>
-    </div>
-  `;
-  candidatesContainer.innerHTML += card;
-});
+        filterCandidates(); // Call filter function on initial load
       });
     }
 
-    // Function to view details of a candidate (you can expand this to show a modal or detailed view)
-    // function viewDetails(candidateId) {
-    //   alert('Viewing details for candidate ID: ' + candidateId);
-    //   // You can navigate to a detailed view page or show a modal here
-    // }
-
-    // Filter candidates based on position or nationality
+    // Function to filter candidates based on selected criteria
     function filterCandidates() {
-      loadCandidates();  // Reload the candidates list with filter applied
+      const selectedPosition = document.getElementById('positionFilter').value;
+      const selectedNationality = document.getElementById('nationalityFilter').value;
+
+      // Filter and store candidates based on the selected filters
+      filteredCandidates = candidatesArray.filter(candidate => {
+        const matchesPosition = !selectedPosition || candidate.position == selectedPosition;
+        const matchesNationality = !selectedNationality || candidate.nationality === selectedNationality;
+        return matchesPosition && matchesNationality;
+      });
+
+      // Reset the displayed count and container content
+      displayedCandidates = 0;
+      document.getElementById('candidatesContainer').innerHTML = ''; // Clear previously displayed candidates only on filter change
+      displayCandidates(); // Display the first batch of filtered candidates
     }
 
-    // Load nationalities and candidates when the page loads
+    function displayCandidates() {
+      const candidatesContainer = document.getElementById('candidatesContainer');
+      const viewMoreBtn = document.getElementById('viewMoreBtn');
+
+      // Check if there are any candidates to show
+      if (filteredCandidates.length === 0) {
+        // Display "No candidates found" message if no candidates are available
+        candidatesContainer.innerHTML = '<div class="text-center mt-4"><p>No candidates found.</p></div>';
+        viewMoreBtn.style.display = 'none'; // Hide the Load More button
+        return;
+      }
+
+      // Get the next batch of candidates to display
+      const candidatesToShow = filteredCandidates.slice(displayedCandidates, displayedCandidates + displayCount);
+      candidatesToShow.forEach(candidate => {
+        const interviewStatus = candidate.interview_done === "1"
+          ? '<div class="badge-status green">Interviewed</div>'
+          : '<div class="badge-status yellow">Not Interviewed Yet</div>';
+        const card = `
+          <div class="col-md-3 mb-4">
+            <div class="card candidate-card position-relative h-100">
+              <a href="javascript:void(0);" onclick="openCandidateDetails('${candidate.id}')"><img src="${candidate.profile_photo_url}" class="card-img-top" alt="${candidate.name}"></a>
+              ${interviewStatus}
+              <div class="card-body">
+                <h4 class="card-title"><strong><em>${candidate.name}</em></strong></h4>
+                <p class="card-text"><strong>Position:</strong> ${positionMap[candidate.position]}</p>
+                <p class="card-text"><strong>Nationality:</strong> ${candidate.nationality}</p>
+                <div class="star-rating">${generateStarRating(candidate.rating)}</div>
+                <a href="javascript:void(0);" class="btn btn-primary mt-2" onclick="openCandidateDetails('${candidate.id}')">View Details</a>
+              </div>
+            </div>
+          </div>
+        `;
+        candidatesContainer.innerHTML += card; // Append cards instead of replacing
+      });
+
+      displayedCandidates += candidatesToShow.length;
+
+      // Show or hide "Load More" button based on remaining candidates
+      if (displayedCandidates >= filteredCandidates.length) {
+        viewMoreBtn.style.display = 'none';
+      } else {
+        viewMoreBtn.style.display = 'block';
+      }
+    }
+
+    function openCandidateDetails(candidateId) {
+      // Open candidate details in a new tab using window.open
+      window.open(`/sensorica/view_details.html?id=${candidateId}`, '_blank');
+    }
+
+    function loadMoreCandidates() {
+      displayCandidates(); // Display the next batch without re-filtering
+    }
+
     window.onload = function () {
-      loadNationalities();  // Load nationalities into the select box
-      loadCandidates();     // Load candidates initially
+      loadNationalities();
+      loadCandidates();
     };
   </script>
 </head>
@@ -169,14 +168,17 @@ filteredCandidates.forEach((candidate) => {
       </div>
       <div class="col-md-4">
         <select id="nationalityFilter" class="form-select" onchange="filterCandidates()">
-          <!-- Nationality options will be dynamically loaded from Firebase -->
+          <!-- Nationality options will be dynamically loaded -->
         </select>
       </div>
     </div>
 
     <!-- Candidates Card Section -->
-    <div class="row" id="candidatesContainer">
-      <!-- Candidate cards will be dynamically inserted here -->
+    <div class="row" id="candidatesContainer"></div>
+
+    <!-- Load More Button -->
+    <div class="text-center my-4">
+      <button id="viewMoreBtn" class="btn btn-secondary mx-auto" onclick="loadMoreCandidates()">Load More</button>
     </div>
   </div>
 </body>

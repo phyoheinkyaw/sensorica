@@ -24,7 +24,9 @@
 </head>
 <body>
   <div class="container table-container">
-    <a href="/sensorica/" class="btn btn-sm btn-warning mb-4"><i class="fa-solid fa-circle-left me-2"></i> Go Back To Candidates List</a>
+    <a href="javascript:void(0);" class="btn btn-sm btn-warning mb-4" onclick="goBack()">
+  <i class="fa-solid fa-circle-left me-2"></i> Go Back To Candidates List
+</a>
     <table class="table table-bordered">
       <thead class="table-light">
         <tr>
@@ -75,7 +77,9 @@
         </tr>
       </tbody>
     </table>
-    <a href="/sensorica/" class="btn btn-sm btn-warning mt-2 me-2"><i class="fa-solid fa-circle-left me-2"></i> Go Back To Candidates List</a>
+    <a href="javascript:void(0);" class="btn btn-sm btn-warning mt-2" onclick="goBack()">
+  <i class="fa-solid fa-circle-left me-2"></i> Go Back To Candidates List
+</a>
     <button id="interviewButton" class="btn btn-sm btn-primary mt-2">I Want to Interview This Candidate</button>
     <div id="interviewStatus" class="mt-2"></div>
   </div>
@@ -210,6 +214,18 @@
       loadCandidateDetails(candidateId);  // Load candidate details by ID
       updateInterviewStatus(candidateId); // Update initial interview status display
     };
+
+    function goBack() {
+  // Attempt to close the window
+  window.close();
+
+  // If window.close() fails (i.e., browser prevents it), show a fallback message
+  setTimeout(() => {
+    if (!window.closed) {
+      alert("Please close this tab to go back to the Candidates List.");
+    }
+  }, 100);
+}
   </script>
 </body>
 </html>
