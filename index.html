@@ -65,6 +65,7 @@
           ...snapshot.val()[key],
           id: key
         }));
+        candidatesArray.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
         filterCandidates(); // Call filter function on initial load
       });
     }
