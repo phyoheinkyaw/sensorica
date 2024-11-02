@@ -107,7 +107,8 @@ button.btn-primary:hover {
   display: block;
   width: 225px;
   padding: 10px 0;
-  background-color: #28a745; /* Green color for interviewed */
+  background-color: #28a745;
+  /* Green color for interviewed */
   color: white;
   text-transform: uppercase;
   text-align: center;
@@ -118,7 +119,8 @@ button.btn-primary:hover {
 }
 
 .ribbon.yellow span {
-  background-color: #ffc107; /* Yellow for not interviewed */
+  background-color: #ffc107;
+  /* Yellow for not interviewed */
 }
 
 /* Badge style for Interview Status */
@@ -128,16 +130,26 @@ button.btn-primary:hover {
   right: 5px;
   padding: 5px 15px;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: 16px;
   color: white;
   font-weight: bold;
 }
 
+.badge-status.left {
+  top: 60px;
+}
+
+.badge-status.blue {
+  background-color: #0d6efd;
+}
+
 .badge-status.green {
-  background-color: #28a745; /* Green for Interviewed */
+  background-color: #28a745;
+  /* Green for Interviewed */
 }
 
 .badge-status.yellow {
   background-color: #ffc107;
-  color: black; /* Yellow for Not Interviewed Yet */
+  color: black;
+  /* Yellow for Not Interviewed Yet */
 }

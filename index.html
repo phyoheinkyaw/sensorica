@@ -1,186 +1,118 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>View Candidates</title>
-  <!-- Bootstrap CSS for styling -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Font Awesome for star icons -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-  <link href="assets/css/style.css" rel="stylesheet" type="text/css">
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-database-compat.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensorica Candidates Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBIKxKbI6k3ojF6Shb6samXxXcUdirYNdU",
-      authDomain: "sensorica-candidates.firebaseapp.com",
-      databaseURL: "https://sensorica-candidates-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "sensorica-candidates",
-      storageBucket: "sensorica-candidates.appspot.com",
-      messagingSenderId: "537441231318",
-      appId: "1:537441231318:web:a3166f73212900bcb24477"
-    };
-    const app = firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
+        .card-menu {
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            color: #fff;
+        }
 
-    const positionMap = {
-      1: "Sous Chef", 2: "Bartender", 3: "Sushi Chef",
-      4: "Cooks", 5: "Waiter", 6: "Hostess", 7: "Cleaning / Dish Washer"
-    };
+        .card-menu:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
 
-    let candidatesArray = []; // Stores all loaded candidates
-    let displayCount = 4; // Number of candidates to display per batch
-    let displayedCandidates = 0; // Track how many have been displayed so far
-    let filteredCandidates = []; // Store filtered candidates separately
+        .menu-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+        }
 
-    function generateStarRating(rating) {
-      let stars = '';
-      for (let i = 1; i <= 5; i++) {
-        stars += `<i class="${i <= rating ? 'fas' : 'far'} fa-star"></i>`;
-      }
-      return stars;
-    }
+        .bg-primary-gradient {
+            background: linear-gradient(135deg, #007bff, #66b2ff);
+        }
 
-    function loadNationalities() {
-      database.ref('candidates').once('value', (snapshot) => {
-        const nationalities = new Set();
-        Object.values(snapshot.val()).forEach(candidate => nationalities.add(candidate.nationality));
-        const nationalityFilter = document.getElementById('nationalityFilter');
-        nationalityFilter.innerHTML = '<option value="" selected>All Nationalities</option>';
-        nationalities.forEach(nationality => {
-          const option = document.createElement('option');
-          option.value = nationality;
-          option.text = nationality;
-          nationalityFilter.appendChild(option);
-        });
-      });
-    }
+        .bg-success-gradient {
+            background: linear-gradient(135deg, #28a745, #71d88c);
+        }
 
-    function loadCandidates() {
-      database.ref('candidates').once('value', (snapshot) => {
-        candidatesArray = Object.keys(snapshot.val() || {}).map(key => ({
-          ...snapshot.val()[key],
-          id: key
-        }));
-        candidatesArray.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-        filterCandidates(); // Call filter function on initial load
-      });
-    }
+        .bg-warning-gradient {
+            background: linear-gradient(135deg, #ffc107, #ffda77);
+        }
 
-    // Function to filter candidates based on selected criteria
-    function filterCandidates() {
-      const selectedPosition = document.getElementById('positionFilter').value;
-      const selectedNationality = document.getElementById('nationalityFilter').value;
-
-      // Filter and store candidates based on the selected filters
-      filteredCandidates = candidatesArray.filter(candidate => {
-        const matchesPosition = !selectedPosition || candidate.position == selectedPosition;
-        const matchesNationality = !selectedNationality || candidate.nationality === selectedNationality;
-        return matchesPosition && matchesNationality;
-      });
-
-      // Reset the displayed count and container content
-      displayedCandidates = 0;
-      document.getElementById('candidatesContainer').innerHTML = ''; // Clear previously displayed candidates only on filter change
-      displayCandidates(); // Display the first batch of filtered candidates
-    }
-
-    function displayCandidates() {
-      const candidatesContainer = document.getElementById('candidatesContainer');
-      const viewMoreBtn = document.getElementById('viewMoreBtn');
-
-      // Check if there are any candidates to show
-      if (filteredCandidates.length === 0) {
-        // Display "No candidates found" message if no candidates are available
-        candidatesContainer.innerHTML = '<div class="text-center mt-4"><p>No candidates found.</p></div>';
-        viewMoreBtn.style.display = 'none'; // Hide the Load More button
-        return;
-      }
-
-      // Get the next batch of candidates to display
-      const candidatesToShow = filteredCandidates.slice(displayedCandidates, displayedCandidates + displayCount);
-      candidatesToShow.forEach(candidate => {
-        const interviewStatus = candidate.interview_done === "1"
-          ? '<div class="badge-status green">Interviewed</div>'
-          : '<div class="badge-status yellow">Not Interviewed Yet</div>';
-        const card = `
-          <div class="col-md-3 mb-4">
-            <div class="card candidate-card position-relative h-100">
-              <a href="javascript:void(0);" onclick="openCandidateDetails('${candidate.id}')"><img src="${candidate.profile_photo_url}" class="card-img-top" alt="${candidate.name}"></a>
-              ${interviewStatus}
-              <div class="card-body">
-                <h4 class="card-title"><strong><em>${candidate.name}</em></strong></h4>
-                <p class="card-text"><strong>Position:</strong> ${positionMap[candidate.position]}</p>
-                <p class="card-text"><strong>Nationality:</strong> ${candidate.nationality}</p>
-                <div class="star-rating">${generateStarRating(candidate.rating)}</div>
-                <a href="javascript:void(0);" class="btn btn-primary mt-2" onclick="openCandidateDetails('${candidate.id}')">View Details</a>
-              </div>
-            </div>
-          </div>
-        `;
-        candidatesContainer.innerHTML += card; // Append cards instead of replacing
-      });
-
-      displayedCandidates += candidatesToShow.length;
-
-      // Show or hide "Load More" button based on remaining candidates
-      if (displayedCandidates >= filteredCandidates.length) {
-        viewMoreBtn.style.display = 'none';
-      } else {
-        viewMoreBtn.style.display = 'block';
-      }
-    }
-
-    function openCandidateDetails(candidateId) {
-      // Open candidate details in a new tab using window.open
-      window.open(`/sensorica/view_details.html?id=${candidateId}`, '_blank');
-    }
-
-    function loadMoreCandidates() {
-      displayCandidates(); // Display the next batch without re-filtering
-    }
-
-    window.onload = function () {
-      loadNationalities();
-      loadCandidates();
-    };
-  </script>
+        .bg-danger-gradient {
+            background: linear-gradient(135deg, #dc3545, #ff6b6b);
+        }
+    </style>
 </head>
+
 <body>
-  <div class="container mt-5">
-    <h2 class="text-center">View Candidates</h2>
-
-    <!-- Filter Section -->
-    <div class="row filter-section mb-4">
-      <div class="col-md-4 mb-4">
-        <select id="positionFilter" class="form-select" onchange="filterCandidates()">
-          <option value="" selected>All Positions</option>
-          <option value="1">Sous Chef</option>
-          <option value="2">Bartender</option>
-          <option value="3">Sushi Chef</option>
-          <option value="4">Cooks</option>
-          <option value="5">Waiter</option>
-          <option value="6">Hostess</option>
-          <option value="7">Cleaning / Dish Washer</option>
-        </select>
-      </div>
-      <div class="col-md-4">
-        <select id="nationalityFilter" class="form-select" onchange="filterCandidates()">
-          <!-- Nationality options will be dynamically loaded -->
-        </select>
-      </div>
+    <div class="container mt-5">
+        <h2 class="text-center mb-4">Sensorica Dashboard Menu</h2>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-2 g-4">
+            <div class="col">
+                <a href="javascript:void(0);" class="text-decoration-none" onclick="openApplied()">
+                    <div class="card card-menu bg-success-gradient">
+                        <div class="card-body d-flex justify-content-center align-items-center">
+                            <span class="menu-title text-dark">View Applied Candidates</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col">
+                <a href="javascript:void(0);" class="text-decoration-none" onclick="openTeam()">
+                    <div class="card card-menu bg-primary-gradient">
+                        <div class="card-body d-flex justify-content-center align-items-center">
+                            <span class="menu-title text-dark">View Team Member</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col">
+                <a href="javascript:void(0);" class="text-decoration-none" onclick="openInterviewed()">
+                    <div class="card card-menu bg-warning-gradient">
+                        <div class="card-body d-flex justify-content-center align-items-center">
+                            <span class="menu-title text-dark">View Already Interviewed Candidates</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col">
+                <a href="javascript:void(0);" class="text-decoration-none" onclick="openShort()">
+                    <div class="card card-menu bg-danger-gradient">
+                        <div class="card-body d-flex justify-content-center align-items-center">
+                            <span class="menu-title text-dark">View Shortlisted Candidates</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
     </div>
 
-    <!-- Candidates Card Section -->
-    <div class="row" id="candidatesContainer"></div>
+    <!-- Bootstrap JS for functionality -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function openApplied() {
+            window.open(`/sensorica/view_applied_candidates.html`, '_blank');
+        }
 
-    <!-- Load More Button -->
-    <div class="text-center my-4">
-      <button id="viewMoreBtn" class="btn btn-secondary mx-auto" onclick="loadMoreCandidates()">Load More</button>
-    </div>
-  </div>
+        function openTeam() {
+            window.open(`/sensorica/view_team_candidates.html`, '_blank');
+        }
+
+        function openInterviewed() {
+            window.open(`/sensorica/view_interviewed_candidates.html`, '_blank');
+        }
+
+        function openShort() {
+            window.open(`/sensorica/view_short_candidates.html`, '_blank');
+        }
+    </script>
 </body>
+
 </html>

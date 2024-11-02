@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,8 +11,10 @@
 
   <!-- DataTables CSS and JS -->
   <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet">
+  <link href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.dataTables.min.css" rel="stylesheet">
   <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
   <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-app-compat.js"></script>
@@ -33,10 +36,10 @@
     const app = firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Define your domain and folder path for the profile photo
-    // const domain = 'https://phyoheinkyaw.github.io/sensorica';
+    // Define your domain and folder paths for the profile photo and resume
     const domain = '';
-    const folderPath = 'assets/img/profile/';
+    const profilePhotoFolder = 'assets/img/profile/';
+    const resumeFolder = 'assets/docs/resume/';
 
     // Position mapping based on the numbers (ID to position name)
     const positionMap = {
@@ -50,6 +53,7 @@
     };
   </script>
 </head>
+
 <body>
   <div class="container mt-5">
     <h2 class="text-center">Add New Candidate</h2>
@@ -89,28 +93,30 @@
         </select>
       </div>
 
+      <!-- Interview Done Field as Select Box -->
       <div class="mb-3">
-        <label class="form-label">Interview Done</label><br>
-        <input type="radio" id="interviewYes" name="interview" value="1" required>
-        <label for="interviewYes">Yes</label>
-        <input type="radio" id="interviewNo" name="interview" value="0" required>
-        <label for="interviewNo">No</label>
+        <label for="interview" class="form-label">Interview Status</label>
+        <select class="form-control" id="interview" required>
+          <option value="" selected disabled>Select Status</option>
+          <option value="a">Applied</option>
+          <option value="i">Interviewed</option>
+          <option value="s">Short Listed</option>
+          <option value="t">Team</option>
+        </select>
       </div>
 
+      <!-- Work Permit Field as Text Box -->
       <div class="mb-3">
-        <label class="form-label">Work Permit</label><br>
-        <input type="radio" id="workPermitYes" name="workPermit" value="1" required>
-        <label for="workPermitYes">Yes</label>
-        <input type="radio" id="workPermitNo" name="workPermit" value="0" required>
-        <label for="workPermitNo">No</label>
+        <label for="workPermit" class="form-label">Work Permit (Reason)</label>
+        <input type="text" class="form-control" id="workPermit" placeholder="Enter work permit details or reason"
+          required>
       </div>
 
+      <!-- Ready to Start Field as Text Box -->
       <div class="mb-3">
-        <label class="form-label">Ready to Start</label><br>
-        <input type="radio" id="readyYes" name="readyToStart" value="1" required>
-        <label for="readyYes">Yes</label>
-        <input type="radio" id="readyNo" name="readyToStart" value="0" required>
-        <label for="readyNo">No</label>
+        <label for="readyToStart" class="form-label">Ready to Start (Reason)</label>
+        <input type="text" class="form-control" id="readyToStart" placeholder="Enter readiness details or reason"
+          required>
       </div>
 
       <div class="mb-3">
@@ -125,12 +131,14 @@
 
       <div class="mb-3">
         <label for="profilePhoto" class="form-label">Profile Photo File Name</label>
-        <input type="text" class="form-control" id="profilePhoto" placeholder="Enter profile photo file name (e.g., profile1.jpg)" required>
+        <input type="text" class="form-control" id="profilePhoto"
+          placeholder="Enter profile photo file name (e.g., profile1.jpg)" required>
       </div>
 
       <div class="mb-3">
         <label for="resumeLink" class="form-label">Resume File Name (Optional)</label>
-        <input type="text" class="form-control" id="resumeLink" placeholder="Enter resume file name (e.g., resume1.pdf)">
+        <input type="text" class="form-control" id="resumeLink"
+          placeholder="Enter resume file name (e.g., resume1.pdf)">
       </div>
 
       <div class="mb-3">
@@ -139,7 +147,8 @@
       </div>
 
       <button type="submit" class="btn btn-primary" id="submitButton">Add Candidate</button>
-      <button type="button" class="btn btn-secondary" id="cancelButton" style="display:none;" onclick="cancelUpdate()">Cancel</button>
+      <button type="button" class="btn btn-secondary" id="cancelButton" style="display:none;"
+        onclick="cancelUpdate()">Cancel</button>
     </form>
 
     <hr>
@@ -169,12 +178,12 @@
 
       // Get the form data
       const name = document.getElementById('candidateName').value;
-      const nationality = document.getElementById('nationality').value;  // Get nationality value
-      const phone = document.getElementById('phone').value;  // Get phone number value
-      const position = document.getElementById('position').value; // Store position as ID (1 to 7)
-      const interview = document.querySelector('input[name="interview"]:checked').value;
-      const workPermit = document.querySelector('input[name="workPermit"]:checked').value;
-      const readyToStart = document.querySelector('input[name="readyToStart"]:checked').value;
+      const nationality = document.getElementById('nationality').value;
+      const phone = document.getElementById('phone').value;
+      const position = document.getElementById('position').value;
+      const interview = document.getElementById('interview').value; // Now capturing selected value
+      const workPermit = document.getElementById('workPermit').value; // Now capturing text reason
+      const readyToStart = document.getElementById('readyToStart').value; // Now capturing text reason
       const expectedSalary = document.getElementById('expectedSalary').value;
       const comments = document.getElementById('comments').value;
       const profilePhotoFileName = document.getElementById('profilePhoto').value;
@@ -183,12 +192,12 @@
       const candidateId = document.getElementById('candidateId').value;
 
       // Construct the full URL for the profile photo
-      const profilePhotoUrl = domain + folderPath + profilePhotoFileName;
+      const profilePhotoUrl = domain + profilePhotoFolder + profilePhotoFileName;
 
       // Construct the full URL for the resume if provided
       let resumeUrl = null;
       if (resumeFileName) {
-        resumeUrl = domain + folderPath + resumeFileName;
+        resumeUrl = domain + resumeFolder + resumeFileName;
       }
 
       // Create timestamp to track order of submission
@@ -196,18 +205,18 @@
 
       const candidateData = {
         name: name,
-        nationality: nationality,  // Add nationality to candidate data
-        phone_number: phone,  // Add phone number to candidate data
-        position: position, // Store position as numeric ID (1 to 7)
-        interview_done: interview,
-        work_permit: workPermit,
-        ready_to_start: readyToStart,
+        nationality: nationality,
+        phone_number: phone,
+        position: position,
+        interview_done: interview, // Now storing the selected value
+        work_permit: workPermit, // Now storing the reason text
+        ready_to_start: readyToStart, // Now storing the reason text
         expected_salary: expectedSalary,
         comments: comments,
         profile_photo_url: profilePhotoUrl,
         resume_url: resumeUrl,
         rating: parseInt(rating),
-        timestamp: timestamp // Add the timestamp
+        timestamp: timestamp
       };
 
       // Check if we're updating or adding
@@ -219,7 +228,7 @@
             document.getElementById('candidateForm').reset();
             document.getElementById('submitButton').innerText = 'Add Candidate';
             document.getElementById('cancelButton').style.display = 'none';
-            loadCandidates();  // Reload the list
+            loadCandidates();
           })
           .catch((error) => {
             console.error('Error updating candidate: ', error);
@@ -231,7 +240,7 @@
           .then(() => {
             alert('Candidate added successfully!');
             document.getElementById('candidateForm').reset();
-            loadCandidates();  // Reload the list
+            loadCandidates();
           })
           .catch((error) => {
             console.error('Error adding candidate: ', error);
@@ -242,40 +251,51 @@
     // Function to load all candidates from Firebase and display them in the table
     function loadCandidates() {
       const candidatesBody = document.getElementById('candidatesBody');
-      candidatesBody.innerHTML = '';  // Clear the table before loading new data
 
+      // Check if the DataTable is already initialized and destroy it
+      if ($.fn.DataTable.isDataTable('#candidatesTable')) {
+        $('#candidatesTable').DataTable().clear().destroy();
+      }
+
+      // Clear the existing table data
+      candidatesBody.innerHTML = '';
+
+      // Fetch data from Firebase
       database.ref('candidates').once('value', (snapshot) => {
         const candidates = snapshot.val();
 
-        // Convert candidates object to an array for sorting
-        const candidatesArray = Object.keys(candidates).map((key) => ({
-          ...candidates[key],
-          id: key
-        }));
+        if (candidates) { // Check if candidates data exists
+          const candidatesArray = Object.keys(candidates).map((key) => ({
+            ...candidates[key],
+            id: key
+          }));
 
-        // Sort candidates by timestamp (ascending order)
-        candidatesArray.sort((a, b) => a.timestamp - b.timestamp);
+          // Sort candidates by timestamp
+          candidatesArray.sort((a, b) => a.timestamp - b.timestamp);
 
-        // Iterate over sorted candidates and assign number
-        candidatesArray.forEach((candidate, index) => {
-          const row = `
-            <tr>
-              <td>${index + 1}</td> <!-- Candidate number (1, 2, 3...) -->
-              <td>${candidate.name}</td>
-              <td>${positionMap[candidate.position]}</td> <!-- Use positionMap to display the position name -->
-              <td>${candidate.nationality}</td>
-              <td>${candidate.phone_number}</td>
-              <td>
-                <button class="btn btn-warning" onclick="editCandidate('${candidate.id}')">Update</button>
-                <button class="btn btn-danger" onclick="deleteCandidate('${candidate.id}')">Delete</button>
-              </td>
-            </tr>
-          `;
-          candidatesBody.innerHTML += row;
+          // Populate the table with new data
+          candidatesArray.forEach((candidate, index) => {
+            const row = `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${candidate.name}</td>
+            <td>${positionMap[candidate.position]}</td>
+            <td>${candidate.nationality}</td>
+            <td>${candidate.phone_number}</td>
+            <td>
+              <button class="btn btn-warning" onclick="editCandidate('${candidate.id}')">Update</button>
+              <button class="btn btn-danger" onclick="deleteCandidate('${candidate.id}')">Delete</button>
+            </td>
+          </tr>
+        `;
+            candidatesBody.innerHTML += row;
+          });
+        }
+
+        // Reinitialize the DataTable
+        $('#candidatesTable').DataTable({
+          responsive: true
         });
-
-        // Initialize DataTables after loading candidates
-        $('#candidatesTable').DataTable();
       });
     }
 
@@ -285,40 +305,25 @@
       candidateRef.once('value').then((snapshot) => {
         const candidate = snapshot.val();
 
-        // Populate the form with existing data
         document.getElementById('candidateId').value = candidateId;
         document.getElementById('candidateName').value = candidate.name;
+        document.getElementById('position').value = candidate.position || "";
+        document.getElementById('nationality').value = candidate.nationality || "";
+        document.getElementById('phone').value = candidate.phone_number || "";
+        document.getElementById('interview').value = candidate.interview_done || ""; // Load the selected value
+        document.getElementById('workPermit').value = candidate.work_permit || ""; // Load the reason text
+        document.getElementById('readyToStart').value = candidate.ready_to_start || ""; // Load the reason text
+        document.getElementById('expectedSalary').value = candidate.expected_salary || "";
+        document.getElementById('comments').value = candidate.comments || "";
+        document.getElementById('profilePhoto').value = candidate.profile_photo_url ? candidate.profile_photo_url.split('/').pop() : "";
+        document.getElementById('resumeLink').value = candidate.resume_url ? candidate.resume_url.split('/').pop() : "";
+        document.getElementById('rating').value = candidate.rating || "";
 
-        // Set the position ID in the select box
-        document.getElementById('position').value = candidate.position || "";  // Ensure position is handled
-
-        document.getElementById('nationality').value = candidate.nationality || "";  // Handle empty values
-        document.getElementById('phone').value = candidate.phone_number || "";  // Handle empty values
-
-        // Ensure radio buttons are handled properly
-        if (candidate.interview_done !== undefined) {
-          document.querySelector(`input[name="interview"][value="${candidate.interview_done}"]`).checked = true;
-        }
-        if (candidate.work_permit !== undefined) {
-          document.querySelector(`input[name="workPermit"][value="${candidate.work_permit}"]`).checked = true;
-        }
-        if (candidate.ready_to_start !== undefined) {
-          document.querySelector(`input[name="readyToStart"][value="${candidate.ready_to_start}"]`).checked = true;
-        }
-
-        document.getElementById('expectedSalary').value = candidate.expected_salary || "";  // Handle empty values
-        document.getElementById('comments').value = candidate.comments || "";  // Handle empty values
-        document.getElementById('profilePhoto').value = candidate.profile_photo_url ? candidate.profile_photo_url.split('/').pop() : "";  // Handle missing profile photo
-        document.getElementById('resumeLink').value = candidate.resume_url ? candidate.resume_url.split('/').pop() : "";  // Handle missing resume
-        document.getElementById('rating').value = candidate.rating || "";  // Handle empty values
-
-        // Change the button text to "Update" and show the cancel button
         document.getElementById('submitButton').innerText = 'Update Candidate';
         document.getElementById('cancelButton').style.display = 'inline';
       });
     }
 
-    // Function to cancel updating and reset the form
     function cancelUpdate() {
       document.getElementById('candidateForm').reset();
       document.getElementById('submitButton').innerText = 'Add Candidate';
@@ -326,13 +331,12 @@
       document.getElementById('candidateId').value = '';
     }
 
-    // Function to delete a candidate
     function deleteCandidate(candidateId) {
       if (confirm('Are you sure you want to delete this candidate?')) {
         database.ref('candidates/' + candidateId).remove()
           .then(() => {
             alert('Candidate deleted successfully!');
-            loadCandidates();  // Reload the list
+            loadCandidates();
           })
           .catch((error) => {
             console.error('Error deleting candidate: ', error);
@@ -340,8 +344,8 @@
       }
     }
 
-    // Load all candidates when the page loads
     loadCandidates();
   </script>
 </body>
+
 </html>

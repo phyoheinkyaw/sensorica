@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,16 +18,33 @@
       border-radius: 10px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
+
     .star-rating .fa-star {
       color: #ffc107;
     }
+
+    .bdg {
+      position: relative;
+    }
+
+    .badge-status {
+      position: absolute;
+      top: 15px;
+      right: 5px;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: white;
+      font-weight: bold;
+    }
   </style>
 </head>
+
 <body>
   <div class="container table-container">
     <a href="javascript:void(0);" class="btn btn-sm btn-warning mb-4" onclick="goBack()">
-  <i class="fa-solid fa-circle-left me-2"></i> Go Back To Candidates List
-</a>
+      <i class="fa-solid fa-circle-left me-2"></i> Go Back To Candidates List
+    </a>
     <table class="table table-bordered">
       <thead class="table-light">
         <tr>
@@ -35,8 +53,10 @@
       </thead>
       <tbody>
         <tr>
-          <td class="text-center" colspan="2">
-            <img id="candidatePhoto" class="img-fluid" alt="Candidate Photo" style="max-height: 200px; border-radius: 10px;">
+          <td class="text-center bdg" colspan="2">
+            <img id="candidatePhoto" class="img-fluid" alt="Candidate Photo"
+              style="max-height: 200px; border-radius: 10px;">
+            <div id="candidateInterviewDone"></div>
           </td>
         </tr>
         <tr>
@@ -56,10 +76,6 @@
           <td id="candidatePhoneNumber"></td>
         </tr>
         <tr>
-          <td><strong>Interview Done</strong></td>
-          <td id="candidateInterviewDone"></td>
-        </tr>
-        <tr>
           <td><strong>Have Work Permit</strong></td>
           <td id="candidateWorkPermit"></td>
         </tr>
@@ -75,11 +91,15 @@
           <td><strong>Comments</strong></td>
           <td id="candidateComments"></td>
         </tr>
+        <tr id="resumeRow">
+          <td><strong>Resume</strong></td>
+          <td><a id="candidateResume" class="btn btn-sm btn-info" target="_blank"></a></td>
+        </tr>
       </tbody>
     </table>
     <a href="javascript:void(0);" class="btn btn-sm btn-warning mt-2" onclick="goBack()">
-  <i class="fa-solid fa-circle-left me-2"></i> Go Back To Candidates List
-</a>
+      <i class="fa-solid fa-circle-left me-2"></i> Go Back To Candidates List
+    </a>
     <button id="interviewButton" class="btn btn-sm btn-primary mt-2">I Want to Interview This Candidate</button>
     <div id="interviewStatus" class="mt-2"></div>
   </div>
@@ -104,11 +124,6 @@
     const app = firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Convert 1 and 0 to Yes/No
-    function convertToYesNo(value) {
-      return value === "1" ? "Yes" : "No";
-    }
-
     // Map position number to job title
     function getPositionTitle(position) {
       const positions = {
@@ -126,6 +141,8 @@
     // Load candidate details from Firebase using the ID from URL
     function loadCandidateDetails(candidateId) {
       const candidatePhoto = document.getElementById('candidatePhoto');
+      const candidateResume = document.getElementById('candidateResume');
+      const candidateResumeRow = document.getElementById('resumeRow');
       const candidateName = document.getElementById('candidateName');
       const candidatePosition = document.getElementById('candidatePosition');
       const candidateNationality = document.getElementById('candidateNationality');
@@ -142,14 +159,36 @@
         // Populate the page with candidate details
         candidatePhoto.src = candidate.profile_photo_url;
         candidateName.innerText = candidate.name;
-        candidatePosition.innerText = getPositionTitle(candidate.position);  // Map position number to job title
+        candidatePosition.innerText = getPositionTitle(candidate.position);
         candidateNationality.innerText = candidate.nationality;
         candidatePhoneNumber.innerText = candidate.phone_number;
         candidateComments.innerText = candidate.comments;
         candidateRating.innerHTML = generateStarRating(candidate.rating);
-        candidateInterviewDone.innerText = convertToYesNo(candidate.interview_done);  // Convert Yes/No for interview_done
-        candidateReadyToStart.innerText = convertToYesNo(candidate.ready_to_start);  // Convert Yes/No for ready_to_start
-        candidateWorkPermit.innerText = convertToYesNo(candidate.work_permit);  // Convert Yes/No for work_permit
+
+        // Display "Interview Done" status as a badge
+        if (candidate.interview_done === 'a') {
+          candidateInterviewDone.innerHTML = '<div class="badge-status bg-success">Applied</div>';
+        } else if (candidate.interview_done === 'i') {
+          candidateInterviewDone.innerHTML = '<div class="badge-status bg-warning text-dark">Interviewed</div>';
+        } else if (candidate.interview_done === 's') {
+          candidateInterviewDone.innerHTML = '<div class="badge-status bg-danger">Short Listed</div>';
+        } else if (candidate.interview_done === 't') {
+          candidateInterviewDone.innerHTML = '<div class="badge-status bg-primary">Team</div>';
+        } else {
+          candidateInterviewDone.innerHTML = '<div class="badge-status bg-dark">Unknown</div>';
+        }
+
+        // Display "Ready to Start" and "Work Permit" as text
+        candidateReadyToStart.innerText = candidate.ready_to_start;
+        candidateWorkPermit.innerText = candidate.work_permit;
+
+        if (candidate.resume_url) {
+          candidateResume.href = `resume_viewer.html?url=${encodeURIComponent(candidate.resume_url)}`;
+          candidateResume.innerText = `View ${candidate.name}'s Resume`;
+          candidateResumeRow.style.display = ''; // Show the row
+        } else {
+          candidateResumeRow.style.display = 'none'; // Hide the row if no resume_url
+        }
       });
     }
 
@@ -157,11 +196,7 @@
     function generateStarRating(rating) {
       let stars = '';
       for (let i = 1; i <= 5; i++) {
-        if (i <= rating) {
-          stars += '<i class="fas fa-star"></i>';
-        } else {
-          stars += '<i class="far fa-star"></i>';
-        }
+        stars += `<i class="${i <= rating ? 'fas' : 'far'} fa-star"></i>`;
       }
       return stars;
     }
@@ -192,7 +227,7 @@
     // Handle the Interview button click
     document.getElementById('interviewButton').onclick = function () {
       const urlParams = new URLSearchParams(window.location.search);
-      const candidateId = urlParams.get('id');  // Retrieve candidate ID from URL
+      const candidateId = urlParams.get('id');
 
       // Toggle want_to_interview value and update Firebase
       database.ref('candidates/' + candidateId).once('value').then((snapshot) => {
@@ -211,21 +246,22 @@
     window.onload = function () {
       const urlParams = new URLSearchParams(window.location.search);
       const candidateId = urlParams.get('id');
-      loadCandidateDetails(candidateId);  // Load candidate details by ID
-      updateInterviewStatus(candidateId); // Update initial interview status display
+      loadCandidateDetails(candidateId);
+      updateInterviewStatus(candidateId);
     };
 
     function goBack() {
-  // Attempt to close the window
-  window.close();
+      // Attempt to close the window
+      window.close();
 
-  // If window.close() fails (i.e., browser prevents it), show a fallback message
-  setTimeout(() => {
-    if (!window.closed) {
-      alert("Please close this tab to go back to the Candidates List.");
+      // If window.close() fails (i.e., browser prevents it), show a fallback message
+      setTimeout(() => {
+        if (!window.closed) {
+          alert("Please close this tab to go back to the Candidates List.");
+        }
+      }, 100);
     }
-  }, 100);
-}
   </script>
 </body>
+
 </html>
