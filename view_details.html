@@ -152,6 +152,8 @@
       const candidateInterviewDone = document.getElementById('candidateInterviewDone');
       const candidateReadyToStart = document.getElementById('candidateReadyToStart');
       const candidateWorkPermit = document.getElementById('candidateWorkPermit');
+      const interviewButton = document.getElementById('interviewButton');
+      const interviewStatusDiv = document.getElementById('interviewStatus');
 
       database.ref('candidates/' + candidateId).once('value', (snapshot) => {
         const candidate = snapshot.val();
@@ -174,6 +176,8 @@
           candidateInterviewDone.innerHTML = '<div class="badge-status bg-danger">Short Listed</div>';
         } else if (candidate.interview_done === 't') {
           candidateInterviewDone.innerHTML = '<div class="badge-status bg-primary">Team</div>';
+          interviewButton.style.display = 'none';
+          interviewStatusDiv.style.display = 'none';
         } else {
           candidateInterviewDone.innerHTML = '<div class="badge-status bg-dark">Unknown</div>';
         }
